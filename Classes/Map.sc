@@ -44,17 +44,6 @@ MIDIMap {
             this.handleMIDIEvent(key, val);
         });
 
-        // MIDI input handler for ccOn and ccOff events, ie cc buttons
-        midiHandlers[\ccOn] = MIDIFunc.cc({ |val, num, chan|
-            var keyOn = [\ccOn, chan, num];
-            var keyOff = [\ccOff, chan, num];
-            if (val > 63) {
-                this.handleMIDIEvent(keyOn, 1);
-            } {
-                this.handleMIDIEvent(keyOff, 0);
-            }
-        });
-
         // Program change handler
         midiHandlers[\programChange] = MIDIFunc.program({ |val, chan|
             var key = [\programChange, chan, val];
@@ -76,22 +65,7 @@ MIDIMap {
 
     // Handle MIDI events
     handleMIDIEvent { |key, val|
-        var ccKey;
-
-        // Check if the key is a ccOn or ccOff and convert it to a cc key for checking
-        if (key[0] == \ccOn || key[0] == \ccOff) {
-            ccKey = [\cc, key[1], key[2]]; // Convert to cc key
-        } {
-            ccKey = key; // Use the original key
-        };
-
         if (midiLearnEnabled && midiLearnCallback.notNil) {
-            // Skip ccOn and ccOff if the corresponding cc key is already mapped
-            if ((key[0] == \ccOn || key[0] == \ccOff) && (midiActions[ccKey].notNil || ignoreCCOnOff)) {
-                ("Ignoring ccOn/ccOff for already mapped cc control: " ++ ccKey).postln;
-                ^nil; // Exit the method early
-            };
-
             // If MIDI Learn is enabled and the key is not the last learned key
             if (key != lastLearnedKey) {
                 // Assign the callback to the key
@@ -101,11 +75,6 @@ MIDIMap {
                 midiLearnCondition.test = true; // Unblock the condition
                 midiLearnCondition.signal; // Signal that the condition is met
                 ("MIDI mapping learned for " ++ key).postln;
-
-                // Set the ignoreCCOnOff flag if a CC value is mapped
-                if (key[0] == \cc) {
-                    ignoreCCOnOff = true;
-                };
             } {
                 // Ignore subsequent values from the same control
                 ("Ignoring subsequent value from " ++ key ++ " during MIDI Learn").postln;
