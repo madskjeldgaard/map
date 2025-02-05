@@ -135,6 +135,21 @@ m.map(type: \cc, channel: 0, number: 2, action: { |val, mapper|
 
 ```
 
+### GUI
+
+A simple GUI is available to quickly test out the controls if you are away from your hardware controller.
+
+```supercollider
+(
+var midiMap = MIDIMap.new;
+midiMap.map(\cc, 1, 10, { |val| "CC 10: %".format(val).postln });
+midiMap.map(\noteOn, 1, 60, { "Note On 60".postln });
+midiMap.map(\noteOff, 1, 60, { "Note Off 60".postln });
+
+midiMap.gui;
+)
+```
+
 ## Installation
 
 Open up SuperCollider and evaluate the following line of code:

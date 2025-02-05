@@ -108,6 +108,13 @@ MIDIMap {
     // Map a function to a MIDI control
     map { |type, channel, number, action|
         var key = [type, channel, number];
+
+        // If a mapping already exists, overwrite it
+        if (midiActions[key].notNil) {
+            ("Overwriting existing MIDI mapping for " ++ key).postln;
+            this.unmap(type, channel, number);
+        };
+
         midiActions[key] = action;
         ("MIDI control mapped: " ++ key).postln;
     }
@@ -141,5 +148,65 @@ MIDIMap {
 
     setPage { |num|
         page = num;
+    }
+
+    getPage {
+        ^page;
+    }
+
+    gui{
+        MIDIMapGUI.new(this);
+    }
+}
+
+MIDIMapGUI {
+    var <midiMap;
+    var window, layout, parameterSection;
+
+    *new { |midiMap|
+        ^super.newCopyArgs(midiMap).init;
+    }
+
+    init {
+        window = Window("MIDI Map GUI", Rect(100, 100, 400, 600));
+        layout = VLayout.new;
+        window.layout = layout;
+
+        this.createControls;
+        window.front;
+    }
+
+    createControls {
+        var maxValue = 127;
+
+        parameterSection = View.new.layout_(VLayout.new);
+        midiMap.midiActions.keysValuesDo { |key, action|
+            var control, label, layout;
+            layout = HLayout.new;
+
+            label = StaticText.new.string_(key.asString);
+            layout.add(label);
+
+            if (key[0] == \cc) {
+                control = Slider.new
+                    .orientation_(\horizontal)
+                    .action_({ |slider|
+                        action.value(slider.value.linlin(0.0,1.0,0,127).asInteger, midiMap);
+                    });
+                layout.add(control);
+            } {
+                control = Button.new
+                    .states_([[key.asString]])
+                    .action_({
+                        var val = if(key[0] == \noteOn) { maxValue } { 0 };
+                        action.value(val.asInteger, midiMap)
+                    });
+                layout.add(control);
+            };
+
+            parameterSection.layout.add(layout);
+        };
+
+        layout.add(parameterSection);
     }
 }
