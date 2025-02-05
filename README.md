@@ -9,6 +9,7 @@ Simple MIDI mapping and MIDI learning for SuperCollider.
 - Use simple function callbacks
 - MIDI learn
 - Save/load mappings to a file
+- Organize mappings in pages
 
 ## Usage
 
@@ -87,6 +88,51 @@ fork{
     });
 }
 )
+```
+
+### Pages
+
+Sometimes it's useful to organize your mappings in pages or layers. One usecase is for example when your controller does not have many physical controls, you can dedicate some of them to changing the page and thus get a lot more control out of the same controller. 
+
+In this example we map a control to change the page number, and then map another control to change the value of the control on the current page.
+
+Below it's limited to the numbers 0 to 3, but you can set this to as many pages as you like, and you can also use symbols or strings to match instead of numbers.
+
+```supercollider
+(
+MIDIClient.init;
+MIDIIn.connectAll;
+
+// Create a new MIDI mapper
+m = MIDIMap.new;
+
+// Map a cc control with page numbers
+m.map(type: \cc, channel: 0, number: 1, action: { |val, mapper|
+    switch (mapper.page,
+        0, {
+            "Page 0 value: %".format(val).postln;
+        },
+        1, {
+            "Page 1 value: %".format(val).postln;
+        },
+        2, {
+            "Page 2 value: %".format(val).postln;
+        },
+        3, {
+            "Page 3 value: %".format(val).postln;
+        }
+    );
+});
+
+// Map another CC value to change the page number
+m.map(type: \cc, channel: 0, number: 2, action: { |val, mapper|
+    var newPage = val.linlin(0, 127, 0, 3).asInteger;
+    mapper.setPage(newPage);
+    "Page number changed to %".format(newPage).postln;
+});
+
+)
+
 ```
 
 ## Installation

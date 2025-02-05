@@ -9,6 +9,8 @@ MIDIMap {
 
     var midiHandlers;
 
+    var <page=0;
+
     *new { |midiMappingsPath|
         ^super.new.init(midiMappingsPath);
     }
@@ -111,7 +113,7 @@ MIDIMap {
         } {
             // Otherwise, execute the mapped action
             if (midiActions[key].notNil) {
-                midiActions[key].value(val);
+                midiActions[key].value(val, this);
             } {
                 ("No action mapped for " ++ key).postln;
             };
@@ -166,5 +168,9 @@ MIDIMap {
         } {
             ("Failed to load MIDI mappings from " ++ midiMappingsPath).postln;
         };
+    }
+
+    setPage { |num|
+        page = num;
     }
 }
