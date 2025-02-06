@@ -106,6 +106,10 @@ MIDIIn.connectAll;
 // Create a new MIDI mapper
 m = MIDIMap.new;
 
+m.setPageChangeFunc({ |newPage, mapper|
+    "Page changed to %".format(newPage).postln;
+});
+
 // Map a cc control with page numbers
 m.map(type: \cc, channel: 0, number: 1, action: { |val, mapper|
     switch (mapper.page,
@@ -128,9 +132,10 @@ m.map(type: \cc, channel: 0, number: 1, action: { |val, mapper|
 m.map(type: \cc, channel: 0, number: 2, action: { |val, mapper|
     var newPage = val.linlin(0, 127, 0, 3).asInteger;
     mapper.setPage(newPage);
-    "Page number changed to %".format(newPage).postln;
+    "Page number slider changed to %".format(newPage).postln;
 });
 
+m.gui;
 )
 
 ```

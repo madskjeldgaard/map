@@ -9,6 +9,8 @@ MIDIMap {
 
     var midiHandlers;
 
+    var pageChangeFunc;
+
     var <page=0;
 
     *new { |midiMappingsPath|
@@ -146,8 +148,16 @@ MIDIMap {
         };
     }
 
+    setPageChangeFunc { |func|
+        pageChangeFunc = func;
+    }
+
     setPage { |num|
         page = num;
+
+        if(pageChangeFunc.notNil) {
+            pageChangeFunc.value(page, this);
+        }
     }
 
     getPage {
@@ -179,8 +189,23 @@ MIDIMapGUI {
     createControls {
         var maxValue = 127;
 
+        // First sort the keys by type and number
+        var sortedKeys = midiMap.midiActions.keys.asArray.sort({ |a, b|
+            var typeOrder = [\noteOn, \noteOff, \cc, \programChange, \pitchBend, \aftertouch];
+            var typeA = typeOrder.indexOf(a[0]);
+            var typeB = typeOrder.indexOf(b[0]);
+
+            if (typeA == typeB) {
+                a[2]  < b[2];
+            } {
+                typeA < typeB;
+            };
+        });
+
         parameterSection = View.new.layout_(VLayout.new);
-        midiMap.midiActions.keysValuesDo { |key, action|
+
+        // Iterate over the sorted keys and create controls for each
+        sortedKeys.do{ |key|
             var control, label, layout;
             layout = HLayout.new;
 
@@ -191,7 +216,7 @@ MIDIMapGUI {
                 control = Slider.new
                     .orientation_(\horizontal)
                     .action_({ |slider|
-                        action.value(slider.value.linlin(0.0,1.0,0,127).asInteger, midiMap);
+                        midiMap.midiActions[key].value(slider.value.linlin(0.0,1.0,0,127).asInteger, midiMap);
                     });
                 layout.add(control);
             } {
@@ -199,7 +224,7 @@ MIDIMapGUI {
                     .states_([[key.asString]])
                     .action_({
                         var val = if(key[0] == \noteOn) { maxValue } { 0 };
-                        action.value(val.asInteger, midiMap)
+                        midiMap.midiActions[key].value(val.asInteger, midiMap)
                     });
                 layout.add(control);
             };
