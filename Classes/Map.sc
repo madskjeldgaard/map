@@ -6,62 +6,107 @@ MIDIMap {
     var <midiLearnCondition; // Condition for blocking MIDI Learn
     var <lastLearnedKey = nil; // Last learned MIDI key
     var <ignoreCCOnOff = false; // Flag to ignore ccOn/ccOff after CC mapping
-
     var midiHandlers;
-
     var pageChangeFunc;
-
     var <page=0;
+    var <allowedDevices; // Array of allowed MIDI device names
+    var <currentDeviceCheck = true; // Whether to check devices
 
-    *new { |midiMappingsPath|
-        ^super.new.init(midiMappingsPath);
+    *new { |midiMappingsPath, allowedDevices|
+        ^super.new.init(midiMappingsPath, allowedDevices);
     }
 
-    init { |path|
+    init { |path, devs|
         midiActions = Dictionary.new;
-        midiLearnCondition = Condition.new; // Initialize the condition
-        midiMappingsPath = path ? "midiMappings.scd"; // Default path for saving/loading mappings
+        midiLearnCondition = Condition.new;
+        midiMappingsPath = path ? "midiMappings.scd";
+        allowedDevices = devs; // Can be nil (allow all) or array of device names
 
-        // Set up MIDI handlers
         this.setupMIDIHandlers;
     }
 
-    // Setup MIDI handlers for noteOn, noteOff, and CC events
-    setupMIDIHandlers {
+    // Enable/disable device checking
+    checkDevices { |bool = true|
+        currentDeviceCheck = bool;
+    }
 
+    // Check if a device is allowed
+    isDeviceAllowed { |src|
+
+        ^(allowedDevices.isNil or: { currentDeviceCheck.not } or: {
+            // var deviceName = MIDIClient.sources.at(src).device;
+            var device = switch(src.class,
+                MIDIEndPoint, {
+                    MIDIClient.sources.detect{|dev| dev == src}
+                },
+                String,  {
+                    MIDIClient.sources.detect{|dev| dev.name == src}
+                },
+                Integer, {
+                    MIDIClient.sources.detect{|dev| dev.uid == src}
+                }
+            );
+            var deviceName;
+            var status = false;
+
+            if(device.notNil) {
+                deviceName = device.name;
+            };
+
+            if(allowedDevices.any{|name| name == deviceName}, {
+                status = true;
+                ("Found device: " ++ deviceName.asString).postln;
+            });
+
+            status
+
+        });
+    }
+
+    // Setup MIDI handlers with device checking
+    setupMIDIHandlers {
         midiHandlers = Dictionary.new;
 
-        midiHandlers[\noteOn] = MIDIFunc.noteOn({ |val, num, chan|
-            var key = [\noteOn, chan, num];
-            this.handleMIDIEvent(key, val);
+        midiHandlers[\noteOn] = MIDIFunc.noteOn({ |val, num, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\noteOn, chan, num];
+                this.handleMIDIEvent(key, val);
+            };
         });
 
-        midiHandlers[\noteOff] = MIDIFunc.noteOff({ |val, num, chan|
-            var key = [\noteOff, chan, num];
-            this.handleMIDIEvent(key, val);
+        midiHandlers[\noteOff] = MIDIFunc.noteOff({ |val, num, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\noteOff, chan, num];
+                this.handleMIDIEvent(key, val);
+            };
         });
 
-        midiHandlers[\cc] = MIDIFunc.cc({ |val, num, chan|
-            var key = [\cc, chan, num];
-            this.handleMIDIEvent(key, val);
+        midiHandlers[\cc] = MIDIFunc.cc({ |val, num, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\cc, chan, num];
+                this.handleMIDIEvent(key, val);
+            };
         });
 
-        // Program change handler
-        midiHandlers[\programChange] = MIDIFunc.program({ |val, chan|
-            var key = [\programChange, chan, val];
-            this.handleMIDIEvent(key, 1);
+        midiHandlers[\programChange] = MIDIFunc.program({ |val, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\programChange, chan, val];
+                this.handleMIDIEvent(key, 1);
+            };
         });
 
-        // Pitch bend handler
-        midiHandlers[\pitchBend] = MIDIFunc.bend({ |val, chan|
-            var key = [\pitchBend, chan, val];
-            this.handleMIDIEvent(key, val);
+        midiHandlers[\pitchBend] = MIDIFunc.bend({ |val, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\pitchBend, chan, val];
+                this.handleMIDIEvent(key, val);
+            };
         });
 
-        // Aftertouch handler
-        midiHandlers[\aftertouch] = MIDIFunc.touch({ |val, chan|
-            var key = [\aftertouch, chan, val];
-            this.handleMIDIEvent(key, val);
+        midiHandlers[\aftertouch] = MIDIFunc.touch({ |val, chan, src|
+            if(this.isDeviceAllowed(src)) {
+                var key = [\aftertouch, chan, val];
+                this.handleMIDIEvent(key, val);
+            };
         });
     }
 
