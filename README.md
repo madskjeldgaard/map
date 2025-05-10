@@ -1,5 +1,7 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/X8X6RXV10)
 
+![screen.png](screen.png) 
+
 # Map
 
 Simple MIDI mapping and MIDI learning for SuperCollider.
@@ -7,9 +9,11 @@ Simple MIDI mapping and MIDI learning for SuperCollider.
 ## Features
 
 - Use simple function callbacks
+- An automatic GUI for organizing and testing mappings using buttons and sliders.
 - MIDI learn
 - Save/load mappings to a file
 - Organize mappings in pages
+- Match against specific MIDI devices. 
 
 ## Usage
 
@@ -28,6 +32,38 @@ m.map(type: \cc, channel: 0, number: 1, action: { |val| ("Value1: " ++ val).post
 
 // Map a noteOn
 m.map(type: \noteOn, channel: 0, number: 48, action: { |val| ("Value2: " ++ val).postln; });
+)
+```
+
+### With GUI
+
+This example constructs a GUI. 
+
+```supercollider
+(
+var numCcs = 8;
+var midiChan = 0;
+
+// Initialize MIDI
+MIDIClient.init;
+MIDIIn.connectAll;
+
+// Create MIDI map
+~midiMap = MIDIMap.new;
+
+~midiMap.setPageChangeFunc({|page, mapper| "Page changed! Now it's on %".format(page).postln });
+
+numCcs.do{|ccNum|
+    ~midiMap.map(\cc, midiChan, ccNum, { |val, mapper| "CC %: %. Page: %".format(ccNum, val, mapper.getPage).postln });
+};
+
+128.do{|noteNum|
+    ~midiMap.map(\noteOn, midiChan, noteNum, { |val, mapper| "Note On %: %. Page: %".format(noteNum, val, mapper.getPage).postln });
+    ~midiMap.map(\noteOff, midiChan, noteNum, { |val, mapper| "Note Off %: %. Page: %".format(noteNum, val, mapper.getPage).postln });
+};
+
+// Open GUI
+~midiMap.gui;
 )
 ```
 
