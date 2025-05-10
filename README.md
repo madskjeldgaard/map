@@ -6,6 +6,10 @@
 
 Simple MIDI mapping and MIDI learning for SuperCollider.
 
+Use this to connect any MIDI controller to Supercollider and control stuff. It has MIDI learn, an automatic gui, mappings you can save/load from disk, etc.
+
+The design goal of this package is to replace all the specific (and differing) packages that exist for specific MIDI controllers with one simple, robust and flexible interface, so you only have to deal with this one interface. And also add functionality from DAWs and other softwares that allow easy mapping and managing of controllers. 
+
 ## Features
 
 - Use simple function callbacks
