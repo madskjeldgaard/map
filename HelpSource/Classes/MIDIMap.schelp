@@ -1,0 +1,142 @@
+TITLE:: MIDIMap
+SUMMARY:: A class for mapping MIDI controls to SuperCollider functions with device filtering and learning capabilities
+CATEGORIES:: External Control>MIDI
+RELATED:: Classes/MIDIFunc, Classes/MIDIIn, Classes/MIDIClient
+
+CLASSMETHODS::
+METHOD:: new
+Create a new MIDIMap instance
+
+ARGUMENT:: midiMappingsPath
+The path where MIDI mappings will be saved/loaded from. Defaults to "midiMappings.scd" in current directory.
+
+ARGUMENT:: allowedDevices
+An array of MIDI device names to filter input from. Set to nil to allow all devices.
+
+RETURNS::
+A new MIDIMap instance
+
+INSTANCEMETHODS::
+METHOD:: map
+Map a MIDI control to a function
+
+ARGUMENT:: type
+The type of MIDI message (\noteOn, \noteOff, \cc, \programChange, \pitchBend, or \aftertouch)
+
+ARGUMENT:: channel
+The MIDI channel (0-15)
+
+ARGUMENT:: number
+The control number (note number, CC number, etc.)
+
+ARGUMENT:: action
+The function to execute when MIDI message is received. Receives value and the MIDIMap instance as arguments.
+
+METHOD:: unmap
+Remove a MIDI mapping
+
+ARGUMENT:: type
+The MIDI message type
+
+ARGUMENT:: channel
+The MIDI channel
+
+ARGUMENT:: number
+The control number
+
+METHOD:: enableMIDILearn
+Enter MIDI learn mode to map controls by physical interaction
+
+ARGUMENT:: callback
+The function to assign to the learned control
+
+ARGUMENT:: actionWhenDone
+An optional function to execute after learning completes
+
+METHOD:: saveMappings
+Save current mappings to file
+
+METHOD:: loadMappings
+Load mappings from file
+
+METHOD:: checkDevices
+Enable/disable device filtering
+
+ARGUMENT:: bool
+Set to true to enable device filtering, false to disable
+
+METHOD:: setPage
+Set the current page for mappings
+
+ARGUMENT:: num
+The page number
+
+METHOD:: getPage
+Get the current page number
+
+RETURNS::
+The current page number
+
+METHOD:: gui
+Open a GUI for managing mappings
+
+RETURNS::
+A MIDIMapGUI window
+
+METHOD:: isDeviceAllowed
+Check if a MIDI device is allowed
+
+ARGUMENT:: src
+The MIDI source (device name, UID, or MIDIEndPoint)
+
+RETURNS::
+Boolean indicating if device is allowed
+
+EXAMPLES::
+code::
+// Basic usage
+(
+MIDIClient.init;
+
+m = MIDIMap.new();
+
+// With device filtering:
+m = MIDIMap.new(allowedDevices: ["MPK Mini Mk II"]);
+
+// Map a CC control
+m.map(\cc, 0, 1, { |val| "CC 1 value: %".format(val).postln });
+
+// Map a note
+m.map(\noteOn, 0, 60, { |val| "Middle C pressed".postln });
+m.map(\noteOff, 0, 60, { |val| "Middle C released".postln });
+
+// MIDI Learn example
+m.enableMIDILearn({ |val| "Learned control value: %".format(val).postln });
+)
+
+// GUI
+m.gui;
+
+// Saving and loading mappings
+(
+m = MIDIMap.new("~/custom_mappings.scd");
+m.map(\cc, 0, 7, { |val| ~volume = val.linlin(0,127,0,1) });
+m.saveMappings;
+
+// Later...
+m.loadMappings;
+)
+
+// Page handling for complex setups
+(
+m = MIDIMap.new;
+m.setPage(1);
+m.map(\cc, 0, 1, { |val| "Page 1 control".postln });
+
+m.setPage(2);
+m.map(\cc, 0, 1, { |val| "Page 2 control".postln });
+
+// Open GUI to manage
+m.gui;
+)
+::
