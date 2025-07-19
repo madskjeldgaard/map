@@ -19,6 +19,20 @@ OSCMap {
         ^super.new.init(oscMappingsPath, allowedHosts, port);
     }
 
+    *localIP {
+        ^Platform.case(
+            \osx,       {
+                "ifconfig -l | xargs -n1 ipconfig getifaddr".unixCmdGetStdOut().strip(Char.ret).strip(Char.nl)
+            },
+            \linux,     {
+                "localip not implemented on linux yet".error
+            },
+            \windows,   {
+                "localip not implemented on windows yet".error
+            }
+        )
+    }
+
     init { |path, hosts, port|
         oscActions = Dictionary.new;
         oscFuncs = Dictionary.new;
@@ -34,6 +48,10 @@ OSCMap {
             thisProcess.openUDPPort(defaultPort);
             ("Opened OSC port " ++ defaultPort).postln;
         };
+
+        "Send OSC messages to: ip '%', port %".format(
+            this.class.localIP, defaultPort
+        ).postln;
     }
 
     // ========== Host Management ==========
@@ -198,4 +216,8 @@ OSCDataLayer {
         var key = [path, argCount];
         ^values[key];
     }
+}
+
++ OSCMap {
+
 }
