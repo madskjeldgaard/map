@@ -4,9 +4,9 @@
 
 # Map
 
-Simple MIDI mapping and MIDI learning for SuperCollider.
+Simple controller mapping and MIDI learning for SuperCollider.
 
-Use this to connect any MIDI controller to Supercollider and control stuff. It has MIDI learn, an automatic gui, mappings you can save/load from disk, etc.
+Use this to connect any MIDI or OSC controller to Supercollider and control stuff. It has MIDI learn, an automatic gui, mappings you can save/load from disk, etc.
 
 The design goal of this package is to replace all the specific (and differing) packages that exist for specific MIDI controllers with one simple, robust and flexible interface, so you only have to deal with this one interface. And also add functionality from DAWs and other softwares that allow easy mapping and managing of controllers. 
 
@@ -18,6 +18,7 @@ The design goal of this package is to replace all the specific (and differing) p
 - Save/load mappings to a file
 - Organize mappings in pages
 - Match against specific MIDI devices. 
+- Supports OSC devices through the `OSCMap` class
 
 ## Usage
 
@@ -193,6 +194,33 @@ midiMap.map(\noteOff, 1, 60, { "Note Off 60".postln });
 
 midiMap.gui;
 )
+```
+
+### OSC mapping
+
+```supercollider
+(
+~localPort = 7777;
+
+// Create an OSCMap allowing messages from localhost
+m = OSCMap.new(port: ~localPort);
+
+// Map a specific OSC path with 1 argument
+m.map('/ping', 0, { |val| "VAL: %".format(val).postln });
+
+// This uses the TouchOSC mk1 simple layout with 16 push buttons
+(1..16).do{|i|
+    var path = "/2/push%".format(i.asString).asSymbol;
+    var numValues = 1;
+    m.map(path, numValues, { |val| "RECEIVED %: %".format(path, val).postln });
+};
+
+)
+
+// Send test messages
+n = NetAddr("127.0.0.1", ~localPort); // Localhost
+n.sendMsg('/ping', 0.75);
+n.sendMsg('/2/push1', 1);
 ```
 
 ## Installation
