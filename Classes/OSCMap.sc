@@ -15,8 +15,10 @@ OSCMap {
     var <defaultPort;
     var <>verbose = true;
 
-    *new { |oscMappingsPath, allowedHosts, port=57120|
-        ^super.new.init(oscMappingsPath, allowedHosts, port);
+    var <>netaddr;
+
+    *new { |oscMappingsPath, allowedHosts, port=57120, remoteIp, remotePort|
+        ^super.new.init(oscMappingsPath, allowedHosts, port, remoteIp, remotePort);
     }
 
     *localIP {
@@ -33,7 +35,11 @@ OSCMap {
         )
     }
 
-    init { |path, hosts, port|
+    localIP {
+        ^this.class.localIP;
+    }
+
+    init { |path, hosts, port, remoteIP, remotePort|
         oscActions = Dictionary.new;
         oscFuncs = Dictionary.new;
         oscLearnCondition = Condition.new;
@@ -42,6 +48,11 @@ OSCMap {
         dataLayer = OSCDataLayer.new;
         catchEnabledPaths = Set.new;
         defaultPort = port;
+
+        if((remoteIP.notNil && remotePort.notNil), {
+            "Setting up remote OSC address to %:%".format(remoteIP, remotePort).postln;
+            netaddr = NetAddr(remoteIP, remotePort);
+        });
 
         // Open port if not already open
         if(thisProcess.openPorts.asArray.includes(defaultPort).not) {
@@ -75,6 +86,11 @@ OSCMap {
         oscFuncs[key] = OSCFunc({ |msg, time, addr|
             var args = msg[1..];
             var host = addr.ip;
+            var hostPort = addr.port;
+
+            if(netaddr.isNil, {
+                netaddr = NetAddr(addr.ip, addr.port);
+            });
 
             if(verbose) {
                 "Received mapped OSC:".postln;
@@ -192,6 +208,18 @@ OSCMap {
         oscFuncs.do(_.free);
         oscActions.clear;
         oscFuncs.clear;
+    }
+
+    send {|path ... args|
+        if(path.isNil or: {args.isNil}) {
+            "OSCMap.send requires a path and at least one argument".error;
+        };
+
+        netaddr.sendMsg(*([path] ++ args));
+
+        if(verbose) {
+            ("Sent OSC message: " ++ path ++ " with args: " ++ args).postln;
+        };
     }
 }
 
